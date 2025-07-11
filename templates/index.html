@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Animación de la Máquina de Turing</title>
+  <script src="https://unpkg.com/cytoscape@3.21.1/dist/cytoscape.min.js"></script>
+  <style>
+  /* Área del grafo */
+  #cy {
+    width: 600px;
+    height: 400px;
+    border: 1px solid #ccc;
+    margin-bottom: 20px;
+  }
+
+  /* Contenedor de la cinta */
+  .cinta {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 10px;
+  }
+
+  /* Cada celda de la cinta */
+  .celda {
+    width: 30px;
+    height: 30px;
+    border: 1px solid #333;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: monospace;
+    background-color: #f8f8f8;
+  }
+
+  /* Celda donde está el cabezal */
+  .cabezal {
+    background-color: #90ee90; /* Verde claro */
+    font-weight: bold;
+  }
+
+  /* Botón */
+  button {
+    padding: 6px 12px;
+    font-size: 14px;
+    cursor: pointer;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    margin-top: 10px;
+  }
+
+  button:hover {
+    background-color: #0056b3;
+  }
+  .cinta-visual {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+  }
+
+  .cinta-visual div {
+    border: 1px solid black;
+    padding: 10px;
+    margin: 2px;
+    min-width: 30px;
+    text-align: center;
+  }
+
+  .cabezal {
+    background-color: lightgreen;
+  }
+</style>
+</head>
+<body>
+    <div style="text-align: center; margin-top: 20px; margin-bottom: 20px;"> <h2>Animación de la Máquina de Turing</h2> 
+    <form action="/" method="POST">
+        <label>Introduce un número</label>
+        <input type="text" name="entrada" required>
+        <input type="submit" value="Procesar">
+    </form>
+    </div>
+
+  <div id="cy" style="width: 600px; height: 400px; margin: auto;"></div>
+
+  <div class="cinta" id="cinta-visual"></div>
+
+  <div style="text-align: center; margin-top: 20px;">
+  <button onclick="siguientePaso()">Siguiente</button>
+    </div>
+
+  <script>
+  let pasosData = {{ pasos | tojson | safe }};
+  let transicionesData = {{ transiciones | tojson | safe }};
+
+  const nodosSet = new Set();
+  transicionesData.forEach(t => {
+    nodosSet.add(t.de);
+    nodosSet.add(t.a);
+  });
+
+  const elementos = [];
+
+  // Nodos
+  nodosSet.forEach(nodo => {
+    elementos.push({ data: { id: nodo, label: nodo } });
+  });
+
+  // Aristas
+  transicionesData.forEach(t => {
+    elementos.push({
+      data: {
+        id: `${t.de}_${t.a}_${t.etiqueta}`,
+        source: t.de,
+        target: t.a,
+        label: t.etiqueta
+      }
+    });
+  });
+
+  const cy = cytoscape({
+    container: document.getElementById('cy'),
+    elements: elementos,
+    style: [
+  {
+    selector: 'node',
+    style: {
+      'label': 'data(label)',
+      'text-valign': 'center',
+      'text-halign': 'center',
+      'background-color': '#555',
+      'color': '#fff',
+      'width': 40,
+      'height': 40,
+      'font-size': 12,
+      'border-width': 2,
+      'border-color': '#222'
+    }
+  },
+  {
+    selector: 'node.highlighted',
+    style: {
+      'background-color': '#00cc00',
+      'color': '#000',
+      'font-weight': 'bold'
+    }
+  },
+  {
+    selector: 'edge',
+    style: {
+      'label': 'data(label)',
+      'curve-style': 'bezier',                    // curvas suaves
+      'control-point-step-size': 60,              // separación de curvas
+      'target-arrow-shape': 'triangle',
+      'arrow-scale': 1.2,
+      'width': 2,
+      'line-color': '#aaa',
+      'target-arrow-color': '#aaa',
+      'text-rotation': 'autorotate',
+      'font-size': 10,
+      'text-background-color': '#fff',
+      'text-background-opacity': 1,
+      'text-background-padding': '2px'
+    }
+  }
+],
+
+    layout: {
+      name: 'circle'
+    }
+  });
+
+let pasoActual = 0;
+
+function mostrarPaso(n) {
+  if (n >= pasosData.length) return;
+
+  const paso = pasosData[n];
+  const estado = paso.estado;
+  const cinta = paso.cinta;
+  const cabezal = paso.cabezal;
+
+  // Resaltar estado
+  cy.nodes().removeClass('highlighted');
+  const nodo = cy.getElementById(estado);
+  if (nodo && nodo.isNode && nodo.length > 0) {
+    nodo.addClass('highlighted');
+  }
+
+  // Dibujar la cinta
+  const cintaContenedor = document.getElementById('cinta-visual');
+  cintaContenedor.innerHTML = '';
+  cinta.forEach((simbolo, i) => {
+    const celda = document.createElement('div');
+    celda.className = 'celda';
+    if (i === cabezal) {
+      celda.classList.add('cabezal');
+    }
+    celda.textContent = simbolo;
+    cintaContenedor.appendChild(celda);
+  });
+}
+
+function siguientePaso() {
+  pasoActual++;
+  if (pasoActual < pasosData.length) {
+    mostrarPaso(pasoActual);
+  }
+}
+
+// Mostrar primer paso al cargar
+mostrarPaso(pasoActual);
+
+</script>
+
+</body>
+</html>
